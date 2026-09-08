@@ -1,0 +1,47 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id               String        @id @default(uuid())
+  name             String
+  email            String        @unique
+  groupMemberships GroupMember[]
+}
+
+model Destination {
+  id        String   @id @default(uuid())
+  name      String
+  baseCost  Float
+  latitude  Float
+  longitude Float
+  tags      String[]
+  imageUrl  String?
+}
+
+model Group {
+  id             String        @id @default(uuid())
+  name           String
+  startDate      DateTime
+  endDate        DateTime
+  maxBudget      Float
+  maxTravelHours Float
+  members        GroupMember[]
+}
+
+model GroupMember {
+  id          String @id @default(uuid())
+  groupId     String
+  userId      String
+  preferences Json
+  group       Group  @relation(fields: [groupId], references: [id])
+  user        User   @relation(fields: [userId], references: [id])
+
+  @@unique([groupId, userId])
+}
