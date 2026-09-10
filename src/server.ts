@@ -1,58 +1,39 @@
 import "dotenv/config";
 import express from "express";
+import http from "http";
 import { prisma } from "./db";
-import { rankDestinationsForGroup } from "./engine/rank";
-import { toGroupConstraints, toMemberPreferences, toDestinations } from "./adapters";
+import { getRecommendationsForGroup } from "./services/recommendations";
 import { getWeatherForecast } from "./services/weather";
-
+import { setupSocket } from "./socket";
 
 const app = express();
 app.use(express.json());
+app.use(express.static("public"));
 
 app.post("/groups/:groupId/recommendations", async (req, res) => {
-    try {
-        const { groupId } = req.params;
-
-        const group = await prisma.group.findUnique({
-            where: { id: groupId },
-            include: { members: true },
-        });
-
-        if (!group) {
-            res.status(404).json({ error: "Group not found" });
-            return;
-        }
-
-        const destinations = await prisma.destination.findMany();
-
-        const constraints = toGroupConstraints(group);
-        const members = toMemberPreferences(group.members);
-        const engineDestinations = toDestinations(destinations);
-
-        const ranked = rankDestinationsForGroup(engineDestinations, constraints, members);
-
-        const rankedWithWeather = await Promise.all(
-          ranked.map(async (dest) => {
-            try {
-              const weather = await getWeatherForecast(dest.latitude, dest.longitude);
-              return { ...dest, weather };
-            } catch (err) {
-              console.error(`Weather fetch failed for "${dest.name}":`, err);
-              return { ...dest, weather: null };
-            }
-          })
-        );
-
-        res.json({ groupId, recommendations: rankedWithWeather });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: "Something went wrong" });
+  try {
+    const result = await getRecommendationsForGroup(req.params.groupId);
+    if (!result) {
+      res.status(404).json({ error: "Group not found" });
+      return;
     }
+    res.json(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Something went wrong" });
+  }
 });
 
-const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+app.get("/groups/:groupId", async (req, res) => {
+  const group = await prisma.group.findUnique({
+    where: { id: req.params.groupId },
+    include: { members: true },
+  });
+  if (!group) {
+    res.status(404).json({ error: "Group not found" });
+    return;
+  }
+  res.json(group);
 });
 
 app.get("/weather", async (req, res) => {
@@ -71,4 +52,12 @@ app.get("/weather", async (req, res) => {
     console.error(err);
     res.status(500).json({ error: "Something went wrong" });
   }
+});
+
+const httpServer = http.createServer(app);
+setupSocket(httpServer);
+
+const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
+httpServer.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });

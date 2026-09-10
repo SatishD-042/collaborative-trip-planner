@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Realtime Test</title>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+</head>
+<body>
+  <h2>Realtime Test Client</h2>
+  <label>Group ID: <input id="groupId" size="40" /></label><br/>
+  <label>User ID: <input id="userId" size="40" /></label><br/>
+  <button onclick="joinGroup()">Join Group</button>
+  <hr/>
+  <h3>Update My Preferences</h3>
+  <textarea id="preferences" rows="4" cols="50">{"Beach": 10, "Nature": 2}</textarea><br/>
+  <button onclick="updatePreferences()">Send Update</button>
+  <hr/>
+  <h3>Log</h3>
+  <pre id="log"></pre>
+
+  <h3>Log</h3>
+  <button onclick="clearLog()">Clear Log</button>
+  <pre id="log"></pre>
+
+  <script>
+    const socket = io();
+
+    function log(msg) {
+        const time = new Date().toLocaleTimeString();
+        const logEl = document.getElementById("log");
+        logEl.textContent = `[${time}] ${msg}\n\n` + logEl.textContent;
+    }
+
+    function joinGroup() {
+        const groupId = document.getElementById("groupId").value;
+        socket.emit("joinGroup", groupId);
+        log("Joining group: " + groupId);
+    }
+
+    function updatePreferences() {
+        const groupId = document.getElementById("groupId").value;
+        const userId = document.getElementById("userId").value;
+        const preferences = JSON.parse(document.getElementById("preferences").value);
+        socket.emit("updatePreferences", { groupId, userId, preferences });
+        log("Sent preference update for user: " + userId);
+    }
+
+    function clearLog() {
+        document.getElementById("log").textContent = "";
+    }
+
+    socket.on("recommendationsUpdated", (data) => {
+        const top3 = data.recommendations
+        .slice(0, 3)
+        .map((d, i) => `${i + 1}. ${d.name} — score: ${d.score.toFixed(2)}`)
+        .join("\n");
+        log("recommendationsUpdated — top 3:\n" + top3);
+    });
+
+    socket.on("preferencesUpdated", (data) => {
+        log("preferencesUpdated for user " + data.userId + ":\n" + JSON.stringify(data.preferences));
+    });
+
+    socket.on("errorEvent", (data) => {
+        log("ERROR: " + JSON.stringify(data));
+    });
+    </script>
+</body>
+</html>
