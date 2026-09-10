@@ -28,7 +28,7 @@ describe("rankDestinationsForGroup", () => {
 
   it("sorts remaining destinations by descending score", () => {
     const result = rankDestinationsForGroup(destinations, constraints, members);
-    expect(result[0].score).toBeGreaterThanOrEqual(result[1].score);
+    expect(result[0]!.score).toBeGreaterThanOrEqual(result[1]!.score);
   });
 
   it("returns an empty array when no destinations pass constraints", () => {

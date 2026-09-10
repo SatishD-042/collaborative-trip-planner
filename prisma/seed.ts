@@ -19,9 +19,14 @@ const TAG_POOL = [
 
 const DESTINATION_COUNT = 25;
 
-async function main() {
-  console.log(`Seeding ${DESTINATION_COUNT} destinations...`);
+async function seedDestinations() {
+  const existingCount = await prisma.destination.count();
+  if (existingCount > 0) {
+    console.log(`Skipping destinations — ${existingCount} already exist.`);
+    return;
+  }
 
+  console.log(`Seeding ${DESTINATION_COUNT} destinations...`);
   const destinations = Array.from({ length: DESTINATION_COUNT }).map(() => ({
     name: `${faker.location.city()}, ${faker.location.country()}`,
     baseCost: faker.number.int({ min: 300, max: 4000 }),
@@ -32,7 +37,64 @@ async function main() {
   }));
 
   await prisma.destination.createMany({ data: destinations });
+}
 
+async function seedGroupWithMembers() {
+  const existingGroup = await prisma.group.findFirst();
+  if (existingGroup) {
+    console.log(`Skipping group — one already exists (id: ${existingGroup.id}).`);
+    return;
+  }
+
+  console.log("Seeding one test group with 3 members...");
+
+  const users = await Promise.all(
+    Array.from({ length: 3 }).map(() =>
+      prisma.user.create({
+        data: {
+          name: faker.person.fullName(),
+          email: faker.internet.email(),
+        },
+      })
+    )
+  );
+
+  const startDate = faker.date.soon({ days: 30 });
+  const endDate = new Date(startDate.getTime() + 5 * 24 * 60 * 60 * 1000);
+
+  const group = await prisma.group.create({
+    data: {
+      name: "Test Trip Group",
+      startDate,
+      endDate,
+      maxBudget: 2000,
+      maxTravelHours: 15,
+      originLatitude: 40.7128, // arbitrary placeholder origin (NYC) — swap for whatever makes sense later
+      originLongitude: -74.006,
+    },
+  });
+
+  for (const user of users) {
+    const preferences: Record<string, number> = {};
+    for (const tag of TAG_POOL) {
+      preferences[tag] = faker.number.int({ min: 0, max: 10 });
+    }
+
+    await prisma.groupMember.create({
+      data: {
+        groupId: group.id,
+        userId: user.id,
+        preferences,
+      },
+    });
+  }
+
+  console.log(`Created group "${group.name}" — id: ${group.id}`);
+}
+
+async function main() {
+  await seedDestinations();
+  await seedGroupWithMembers();
   console.log("Done seeding.");
 }
 

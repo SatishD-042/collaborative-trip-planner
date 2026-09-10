@@ -32,6 +32,8 @@ model Group {
   endDate        DateTime
   maxBudget      Float
   maxTravelHours Float
+  originLatitude  Float
+  originLongitude Float
   members        GroupMember[]
 }
 
