@@ -3,6 +3,20 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { io, Socket } from "socket.io-client";
+import { Slider } from "@/components/ui/slider";
+
+const TAG_POOL = [
+  "Beach",
+  "Nightlife",
+  "Nature",
+  "Adventure",
+  "Culture",
+  "Food",
+  "Relaxation",
+  "Shopping",
+  "Family-Friendly",
+  "Budget",
+];
 
 interface Destination {
   id: string;
@@ -22,7 +36,9 @@ export default function GroupPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [recommendations, setRecommendations] = useState<Destination[]>([]);
   const [connected, setConnected] = useState(false);
-  const [preferencesInput, setPreferencesInput] = useState('{"Beach": 5, "Nature": 5}');
+  const [preferences, setPreferences] = useState<Record<string, number>>(
+    Object.fromEntries(TAG_POOL.map((tag) => [tag, 5]))
+  );
 
   useEffect(() => {
     const storedUserId = localStorage.getItem("userId");
@@ -48,16 +64,14 @@ export default function GroupPage() {
     };
   }, [groupId]);
 
-  function handleUpdatePreferences(e: React.FormEvent) {
-    e.preventDefault();
-    if (!userId) return;
-
-    try {
-      const preferences = JSON.parse(preferencesInput);
-      socket.emit("updatePreferences", { groupId, userId, preferences });
-    } catch {
-      alert("Preferences must be valid JSON");
-    }
+  function handlePreferenceChange(tag: string, value: number) {
+    setPreferences((prev) => {
+      const updated = { ...prev, [tag]: value };
+      if (userId) {
+        socket.emit("updatePreferences", { groupId, userId, preferences: updated });
+      }
+      return updated;
+    });
   }
 
   return (
@@ -69,18 +83,27 @@ export default function GroupPage() {
         </p>
       </div>
 
-      <form onSubmit={handleUpdatePreferences} className="flex flex-col gap-2">
-        <label className="text-sm font-medium">Your Preferences (JSON)</label>
-        <textarea
-          className="border rounded px-3 py-2 font-mono text-sm"
-          rows={3}
-          value={preferencesInput}
-          onChange={(e) => setPreferencesInput(e.target.value)}
-        />
-        <button type="submit" className="bg-black text-white rounded px-4 py-2 w-fit">
-          Update Preferences
-        </button>
-      </form>
+      <div className="flex flex-col gap-4">
+        <h2 className="text-lg font-semibold">Your Preferences</h2>
+        {TAG_POOL.map((tag) => (
+          <div key={tag} className="flex flex-col gap-1">
+            <div className="flex justify-between text-sm">
+              <span>{tag}</span>
+              <span className="text-gray-500">{preferences[tag]}</span>
+            </div>
+            <Slider
+              value={[preferences[tag]]}
+              min={0}
+              max={10}
+              step={1}
+              onValueChange={(value) => {
+                const newValue = Array.isArray(value) ? value[0] : value;
+                handlePreferenceChange(tag, newValue);
+              }}
+            />
+          </div>
+        ))}
+      </div>
 
       <div className="flex flex-col gap-3">
         <h2 className="text-lg font-semibold">Recommendations</h2>
