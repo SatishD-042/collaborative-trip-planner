@@ -27,7 +27,7 @@ export default function JoinPage() {
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-4 p-8">
-      <h1 className="text-2xl font-bold">Join a Trip Group</h1>
+      <h1 className="text-2xl font-bold">Join your Group</h1>
       <form onSubmit={handleJoin} className="flex flex-col gap-3 w-full max-w-sm">
         <input className="border rounded px-3 py-2" placeholder="Group ID" value={groupId} onChange={(e) => setGroupId(e.target.value)} />
         {!hasIdentity && (
@@ -37,7 +37,7 @@ export default function JoinPage() {
           </>
         )}
         <button type="submit" className="bg-black text-white rounded px-4 py-2">
-          Join Group
+          Join
         </button>
       </form>
     </main>

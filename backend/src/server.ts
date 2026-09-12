@@ -5,6 +5,7 @@ import http from "http";
 import { prisma } from "./db";
 import { getRecommendationsForGroup } from "./services/recommendations";
 import { getWeatherForecast } from "./services/weather";
+import { geocodePlace } from "./services/geocode";
 import { setupSocket } from "./socket";
 
 const app = express();
@@ -17,14 +18,42 @@ const TAG_POOL = [
   "Food", "Relaxation", "Shopping", "Family-Friendly", "Budget",
 ];
 
+const MIN_TRAVEL_HOURS = 1;
+const MAX_TRAVEL_HOURS = 100;
+const ALLOWED_CURRENCIES = ["USD", "EUR", "GBP", "INR", "JPY", "AUD", "CAD"];
+
 app.post("/groups", async (req, res) => {
   try {
-    const { name, startDate, endDate, maxBudget, maxTravelHours, originLatitude, originLongitude } = req.body;
+    const { name, startDate, endDate, maxBudget, maxTravelHours, currency, origin } = req.body;
 
-    if (!name || !startDate || !endDate || typeof maxBudget !== "number" || typeof maxTravelHours !== "number") {
+    if (!name || !startDate || !endDate || typeof maxBudget !== "number") {
       res.status(400).json({ error: "Missing or invalid fields" });
       return;
     }
+
+    if (
+      typeof maxTravelHours !== "number" ||
+      maxTravelHours < MIN_TRAVEL_HOURS ||
+      maxTravelHours > MAX_TRAVEL_HOURS
+    ) {
+      res.status(400).json({
+        error: `maxTravelHours must be between ${MIN_TRAVEL_HOURS} and ${MAX_TRAVEL_HOURS}`,
+      });
+      return;
+    }
+
+    if (!origin || typeof origin !== "string") {
+      res.status(400).json({ error: "origin is required" });
+      return;
+    }
+
+    const geo = await geocodePlace(origin);
+    if (!geo) {
+      res.status(400).json({ error: `Could not find a location matching "${origin}"` });
+      return;
+    }
+
+    const resolvedCurrency = ALLOWED_CURRENCIES.includes(currency) ? currency : "USD";
 
     const group = await prisma.group.create({
       data: {
@@ -33,8 +62,10 @@ app.post("/groups", async (req, res) => {
         endDate: new Date(endDate),
         maxBudget,
         maxTravelHours,
-        originLatitude: originLatitude ?? 40.7128,
-        originLongitude: originLongitude ?? -74.006,
+        currency: resolvedCurrency,
+        originLatitude: geo.lat,
+        originLongitude: geo.lon,
+        originName: geo.name,
       },
     });
 
@@ -48,18 +79,51 @@ app.post("/groups", async (req, res) => {
 app.patch("/groups/:groupId", async (req, res) => {
   try {
     const { groupId } = req.params;
-    const { maxBudget } = req.body as { maxBudget?: number };
+    const { maxBudget, maxTravelHours, origin } = req.body as {
+      maxBudget?: number;
+      maxTravelHours?: number;
+      origin?: string;
+    };
 
-    if (typeof maxBudget !== "number") {
-      res.status(400).json({ error: "maxBudget (number) is required" });
+    const data: {
+      maxBudget?: number;
+      maxTravelHours?: number;
+      originLatitude?: number;
+      originLongitude?: number;
+      originName?: string;
+    } = {};
+
+    if (typeof maxBudget === "number") {
+      data.maxBudget = maxBudget;
+    }
+
+    if (typeof maxTravelHours === "number") {
+      if (maxTravelHours < MIN_TRAVEL_HOURS || maxTravelHours > MAX_TRAVEL_HOURS) {
+        res.status(400).json({
+          error: `maxTravelHours must be between ${MIN_TRAVEL_HOURS} and ${MAX_TRAVEL_HOURS}`,
+        });
+        return;
+      }
+      data.maxTravelHours = maxTravelHours;
+    }
+
+    if (typeof origin === "string" && origin.trim().length > 0) {
+      const geo = await geocodePlace(origin);
+      if (!geo) {
+        res.status(400).json({ error: `Could not find a location matching "${origin}"` });
+        return;
+      }
+      data.originLatitude = geo.lat;
+      data.originLongitude = geo.lon;
+      data.originName = geo.name;
+    }
+
+    if (Object.keys(data).length === 0) {
+      res.status(400).json({ error: "No valid fields to update" });
       return;
     }
 
-    const group = await prisma.group.update({
-      where: { id: groupId },
-      data: { maxBudget },
-    });
-
+    const group = await prisma.group.update({ where: { id: groupId }, data });
     res.json(group);
   } catch (err) {
     console.error(err);
@@ -184,33 +248,18 @@ app.post("/destinations", async (req, res) => {
       return;
     }
 
-    const apiKey = process.env.OPENWEATHER_API_KEY;
-    const geoUrl = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(name)}&limit=1&appid=${apiKey}`;
-    const geoRes = await fetch(geoUrl);
-
-    if (!geoRes.ok) {
-      res.status(502).json({ error: "Geocoding request failed" });
-      return;
-    }
-
-    const geoData = await geoRes.json();
-
-    if (!Array.isArray(geoData) || geoData.length === 0) {
+    const geo = await geocodePlace(name);
+    if (!geo) {
       res.status(400).json({ error: `Could not find a location matching "${name}"` });
       return;
     }
 
-    const match = geoData[0];
-    const resolvedName = match.state
-      ? `${match.name}, ${match.state}, ${match.country}`
-      : `${match.name}, ${match.country}`;
-
     const destination = await prisma.destination.create({
       data: {
-        name: resolvedName,
+        name: geo.name,
         baseCost,
-        latitude: match.lat,
-        longitude: match.lon,
+        latitude: geo.lat,
+        longitude: geo.lon,
         tags,
       },
     });

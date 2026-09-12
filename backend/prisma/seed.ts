@@ -85,6 +85,7 @@ async function seedGroupWithMembers() {
       maxTravelHours: 15,
       originLatitude: 40.7128, // arbitrary placeholder origin (NYC) — swap for whatever makes sense later
       originLongitude: -74.006,
+      originName: "New York, US",
     },
   });
 

@@ -35,6 +35,8 @@ model Group {
   maxTravelHours    Float
   originLatitude    Float
   originLongitude   Float
+  originName        String             @default("")
+  currency          String             @default("USD")
   members           GroupMember[]
   groupDestinations GroupDestination[]
 }
