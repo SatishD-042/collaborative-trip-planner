@@ -39,6 +39,34 @@ export default function GroupPage() {
   const [preferences, setPreferences] = useState<Record<string, number>>(
     Object.fromEntries(TAG_POOL.map((tag) => [tag, 5]))
   );
+  const [groupName, setGroupName] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
+
+  const [destName, setDestName] = useState("");
+  const [destCost, setDestCost] = useState(1000);
+  const [destTags, setDestTags] = useState<string[]>([]);
+  const [destSubmitting, setDestSubmitting] = useState(false);
+  const [destError, setDestError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setUserName(localStorage.getItem("name"));
+
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/groups/${groupId}`)
+      .then((res) => res.json())
+      .then((data) => setGroupName(data.name))
+      .catch((err) => console.error("Failed to fetch group info:", err));
+  }, [groupId]);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("preferences");
+    if (stored) {
+      try {
+        setPreferences(JSON.parse(stored));
+      } catch {
+        // ignore malformed value
+      }
+    }
+  }, []);
 
   useEffect(() => {
     const storedUserId = localStorage.getItem("userId");
@@ -64,6 +92,41 @@ export default function GroupPage() {
     };
   }, [groupId]);
 
+  function toggleDestTag(tag: string) {
+    setDestTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+    );
+  }
+
+  async function handleAddDestination(e: React.FormEvent) {
+    e.preventDefault();
+    if (!destName || destTags.length === 0) return;
+    setDestSubmitting(true);
+    setDestError(null);
+
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/destinations`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: destName, baseCost: destCost, tags: destTags }),
+      });
+
+      if (!res.ok) {
+        const body = await res.json();
+        throw new Error(body.error ?? "Failed to add destination");
+      }
+
+      socket.emit("refreshRecommendations", groupId);
+      setDestName("");
+      setDestCost(1000);
+      setDestTags([]);
+    } catch (err) {
+      setDestError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setDestSubmitting(false);
+    }
+  }
+
   function handlePreferenceChange(tag: string, value: number) {
     setPreferences((prev) => {
       const updated = { ...prev, [tag]: value };
@@ -77,9 +140,9 @@ export default function GroupPage() {
   return (
     <main className="max-w-2xl mx-auto p-8 flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-bold">Group: {groupId}</h1>
+        <h1 className="text-2xl font-bold">{groupName ?? "Loading..."}</h1>
         <p className="text-sm text-gray-500">
-          You: {userId ?? "unknown"} — {connected ? "🟢 Connected" : "🔴 Disconnected"}
+          You: {userName ?? "unknown"} — {connected ? "🟢 Connected" : "🔴 Disconnected"}
         </p>
       </div>
 
@@ -103,6 +166,52 @@ export default function GroupPage() {
             />
           </div>
         ))}
+      </div>
+
+      <div className="flex flex-col gap-3 border rounded p-4">
+        <h2 className="text-lg font-semibold">Add a Destination</h2>
+        <form onSubmit={handleAddDestination} className="flex flex-col gap-3">
+          <input
+            className="border rounded px-3 py-2"
+            placeholder="Place name (e.g. Lisbon, Portugal)"
+            value={destName}
+            onChange={(e) => setDestName(e.target.value)}
+          />
+          <div>
+            <label className="text-sm font-medium">Estimated cost per person ($)</label>
+            <input
+              type="number"
+              className="border rounded px-3 py-2 w-full mt-1"
+              value={destCost}
+              onChange={(e) => setDestCost(Number(e.target.value))}
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium">Tags</label>
+            <div className="flex flex-wrap gap-2 mt-1">
+              {TAG_POOL.map((tag) => (
+                <button
+                  type="button"
+                  key={tag}
+                  onClick={() => toggleDestTag(tag)}
+                  className={`text-sm px-3 py-1 rounded-full border ${
+                    destTags.includes(tag) ? "bg-black text-white" : "bg-white text-black"
+                  }`}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+          </div>
+          {destError && <p className="text-red-600 text-sm">{destError}</p>}
+          <button
+            type="submit"
+            disabled={destSubmitting}
+            className="bg-black text-white rounded px-4 py-2 w-fit disabled:opacity-50"
+          >
+            {destSubmitting ? "Adding..." : "Add Destination"}
+          </button>
+        </form>
       </div>
 
       <div className="flex flex-col gap-3">

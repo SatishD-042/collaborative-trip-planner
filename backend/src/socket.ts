@@ -43,6 +43,13 @@ export function setupSocket(httpServer: HttpServer) {
       }
     );
 
+    socket.on("refreshRecommendations", async (groupId: string) => {
+      const result = await getRecommendationsForGroup(groupId);
+      if (result) {
+        io.to(groupId).emit("recommendationsUpdated", result);
+      }
+    });
+
     socket.on("disconnect", () => {
       console.log(`Socket disconnected: ${socket.id}`);
     });
