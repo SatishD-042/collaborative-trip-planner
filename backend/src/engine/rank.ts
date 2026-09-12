@@ -15,8 +15,9 @@ export function rankDestinationsForGroup(
     const eligible = filterByConstraints(destinations, constraints);
 
     const scored: ScoredDestination[] = eligible.map((dest) => {
-        const { score, memberScores } = scoreDestinationForGroup(dest, members);
+        const { score, memberScores } = scoreDestinationForGroup(dest, members, constraints.maxBudget);
         return { ...dest, score, memberScores };
     });
+    
     return scored.sort((a, b) => b.score - a.score);
 }

@@ -19,6 +19,20 @@ const TAG_POOL = [
 
 const DESTINATION_COUNT = 25;
 
+async function seedGroupDestinations(groupId: string) {
+  const existing = await prisma.groupDestination.count({ where: { groupId } });
+  if (existing > 0) {
+    console.log("Skipping group destinations — already linked.");
+    return;
+  }
+
+  const firstFive = await prisma.destination.findMany({ take: 5 });
+  await prisma.groupDestination.createMany({
+    data: firstFive.map((d) => ({ groupId, destinationId: d.id })),
+  });
+  console.log(`Linked ${firstFive.length} destinations to the test group's shortlist.`);
+}
+
 async function seedDestinations() {
   const existingCount = await prisma.destination.count();
   if (existingCount > 0) {
@@ -90,6 +104,7 @@ async function seedGroupWithMembers() {
   }
 
   console.log(`Created group "${group.name}" — id: ${group.id}`);
+  await seedGroupDestinations(group.id);
 }
 
 async function main() {

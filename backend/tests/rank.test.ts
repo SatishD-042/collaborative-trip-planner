@@ -10,8 +10,8 @@ const constraints: GroupConstraints = {
 };
 
 const members: MemberPreferences[] = [
-  { userId: "u1", preferences: { Beach: 10, Nature: 2 } },
-  { userId: "u2", preferences: { Beach: 2, Nature: 10 } },
+  { userId: "u1", preferences: { Beach: 10, Nature: 2 }, preferredSpend: 500 },
+  { userId: "u2", preferences: { Beach: 2, Nature: 10 }, preferredSpend: 500 },
 ];
 
 const destinations: Destination[] = [
@@ -28,6 +28,7 @@ describe("rankDestinationsForGroup", () => {
 
   it("sorts remaining destinations by descending score", () => {
     const result = rankDestinationsForGroup(destinations, constraints, members);
+    expect(result.length).toBeGreaterThanOrEqual(2);
     expect(result[0]!.score).toBeGreaterThanOrEqual(result[1]!.score);
   });
 
@@ -48,6 +49,7 @@ describe("rankDestinationsForGroup", () => {
   it("includes correct per-member scores in the output", () => {
     const result = rankDestinationsForGroup(destinations, constraints, members);
     const beachy = result.find((d) => d.id === "1");
-    expect(beachy?.memberScores).toEqual({ u1: 10, u2: 2 });
+    expect(beachy?.memberScores.u1).toBeCloseTo(10);
+    expect(beachy?.memberScores.u2).toBeCloseTo(6);
   });
 });

@@ -16,34 +16,49 @@ model User {
 }
 
 model Destination {
-  id        String   @id @default(uuid())
-  name      String
-  baseCost  Float
-  latitude  Float
-  longitude Float
-  tags      String[]
-  imageUrl  String?
+  id                String             @id @default(uuid())
+  name              String
+  baseCost          Float
+  latitude          Float
+  longitude         Float
+  tags              String[]
+  imageUrl          String?
+  groupDestinations GroupDestination[]
 }
 
 model Group {
-  id             String        @id @default(uuid())
-  name           String
-  startDate      DateTime
-  endDate        DateTime
-  maxBudget      Float
-  maxTravelHours Float
-  originLatitude  Float
-  originLongitude Float
-  members        GroupMember[]
+  id                String             @id @default(uuid())
+  name              String
+  startDate         DateTime
+  endDate           DateTime
+  maxBudget         Float
+  maxTravelHours    Float
+  originLatitude    Float
+  originLongitude   Float
+  members           GroupMember[]
+  groupDestinations GroupDestination[]
 }
 
 model GroupMember {
-  id          String @id @default(uuid())
-  groupId     String
-  userId      String
-  preferences Json
-  group       Group  @relation(fields: [groupId], references: [id])
-  user        User   @relation(fields: [userId], references: [id])
+  id             String  @id @default(uuid())
+  groupId        String
+  userId         String
+  preferences    Json
+  preferredSpend Float   @default(0)
+  isOwner        Boolean @default(false)
+  group          Group   @relation(fields: [groupId], references: [id])
+  user           User    @relation(fields: [userId], references: [id])
 
   @@unique([groupId, userId])
+}
+
+model GroupDestination {
+  id            String      @id @default(uuid())
+  groupId       String
+  destinationId String
+  createdAt     DateTime    @default(now())
+  group         Group       @relation(fields: [groupId], references: [id])
+  destination   Destination @relation(fields: [destinationId], references: [id])
+
+  @@unique([groupId, destinationId])
 }

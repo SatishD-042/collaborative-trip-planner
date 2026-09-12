@@ -14,51 +14,64 @@ const destination: Destination = {
   tags: ["Beach", "Nature"],
 };
 
+const maxBudget = 1000;
+
 describe("scoreDestinationForMember", () => {
-  it("averages weights of matched tags", () => {
+  it("averages tag weights with budget fit when cost matches preferred spend", () => {
     const member: MemberPreferences = {
       userId: "u1",
       preferences: { Beach: 10, Nature: 6 },
+      preferredSpend: 500,
     };
-    expect(scoreDestinationForMember(destination, member)).toBe(8);
+    expect(scoreDestinationForMember(destination, member, maxBudget)).toBeCloseTo(26 / 3);
   });
 
-  it("treats an unmatched tag as weight 0", () => {
+  it("treats an unmatched tag as weight 0, budget fit still included", () => {
     const member: MemberPreferences = {
       userId: "u1",
       preferences: { Beach: 10 },
+      preferredSpend: 500,
     };
-    expect(scoreDestinationForMember(destination, member)).toBe(5);
+    expect(scoreDestinationForMember(destination, member, maxBudget)).toBeCloseTo(20 / 3);
   });
 
-  it("returns 0 when the destination has no tags", () => {
+  it("scores budget fit lower as cost exceeds preferred spend", () => {
+    const expensiveDest: Destination = { ...destination, baseCost: 800 };
+    const member: MemberPreferences = {
+      userId: "u1",
+      preferences: { Beach: 10, Nature: 6 },
+      preferredSpend: 200,
+    };
+    expect(scoreDestinationForMember(expensiveDest, member, maxBudget)).toBeCloseTo(18.5 / 3);
+  });
+
+  it("relies only on budget fit when destination has no tags", () => {
     const noTagsDestination: Destination = { ...destination, tags: [] };
-    const member: MemberPreferences = {
-      userId: "u1",
-      preferences: { Beach: 10 },
-    };
-    expect(scoreDestinationForMember(noTagsDestination, member)).toBe(0);
+    const member: MemberPreferences = { userId: "u1", preferences: {}, preferredSpend: 500 };
+    expect(scoreDestinationForMember(noTagsDestination, member, maxBudget)).toBe(10);
   });
 
-  it("returns 0 when the member has no preferences at all", () => {
-    const member: MemberPreferences = { userId: "u1", preferences: {} };
-    expect(scoreDestinationForMember(destination, member)).toBe(0);
+  it("scores 0 across the board when tags and budget both mismatch", () => {
+    const member: MemberPreferences = { userId: "u1", preferences: {}, preferredSpend: 0 };
+    const atCapDestination: Destination = { ...destination, baseCost: maxBudget };
+    expect(scoreDestinationForMember(atCapDestination, member, maxBudget)).toBe(0);
   });
 });
 
 describe("scoreDestinationForGroup", () => {
   it("averages scores across multiple members", () => {
     const members: MemberPreferences[] = [
-      { userId: "u1", preferences: { Beach: 10, Nature: 10 } },
-      { userId: "u2", preferences: { Beach: 0, Nature: 0 } },
+      { userId: "u1", preferences: { Beach: 10, Nature: 10 }, preferredSpend: 500 },
+      { userId: "u2", preferences: { Beach: 0, Nature: 0 }, preferredSpend: 500 },
     ];
-    const { score, memberScores } = scoreDestinationForGroup(destination, members);
-    expect(score).toBe(5);
-    expect(memberScores).toEqual({ u1: 10, u2: 0 });
+    const { score, memberScores } = scoreDestinationForGroup(destination, members, maxBudget);
+    expect(memberScores.u1).toBeCloseTo(30 / 3);
+    expect(memberScores.u2).toBeCloseTo(10 / 3);
+    expect(score).toBeCloseTo((30 / 3 + 10 / 3) / 2);
   });
 
-  it("returns 0 and an empty memberScores when there are no members", () => {
-    const { score, memberScores } = scoreDestinationForGroup(destination, []);
+  it("returns 0 and empty memberScores when there are no members", () => {
+    const { score, memberScores } = scoreDestinationForGroup(destination, [], maxBudget);
     expect(score).toBe(0);
     expect(memberScores).toEqual({});
   });

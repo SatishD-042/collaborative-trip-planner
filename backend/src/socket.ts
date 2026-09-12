@@ -9,8 +9,6 @@ export function setupSocket(httpServer: HttpServer) {
   });
 
   io.on("connection", (socket: Socket) => {
-    console.log(`Socket connected: ${socket.id}`);
-
     socket.on("joinGroup", async (groupId: string) => {
       socket.join(groupId);
       const result = await getRecommendationsForGroup(groupId);
@@ -21,16 +19,21 @@ export function setupSocket(httpServer: HttpServer) {
 
     socket.on(
       "updatePreferences",
-      async (payload: { groupId: string; userId: string; preferences: Record<string, number> }) => {
-        const { groupId, userId, preferences } = payload;
+      async (payload: {
+        groupId: string;
+        userId: string;
+        preferences: Record<string, number>;
+        preferredSpend: number;
+      }) => {
+        const { groupId, userId, preferences, preferredSpend } = payload;
 
         try {
           await prisma.groupMember.update({
             where: { groupId_userId: { groupId, userId } },
-            data: { preferences },
+            data: { preferences, preferredSpend },
           });
 
-          io.to(groupId).emit("preferencesUpdated", { userId, preferences });
+          io.to(groupId).emit("preferencesUpdated", { userId, preferences, preferredSpend });
 
           const result = await getRecommendationsForGroup(groupId);
           if (result) {
@@ -50,9 +53,7 @@ export function setupSocket(httpServer: HttpServer) {
       }
     });
 
-    socket.on("disconnect", () => {
-      console.log(`Socket disconnected: ${socket.id}`);
-    });
+    socket.on("disconnect", () => {});
   });
 
   return io;

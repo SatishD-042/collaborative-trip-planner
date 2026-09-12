@@ -13,7 +13,9 @@ export async function getRecommendationsForGroup(groupId: string) {
     return null;
   }
 
-  const destinations = await prisma.destination.findMany();
+  const destinations = await prisma.destination.findMany({
+    where: { groupDestinations: { some: { groupId } } },
+  });
 
   const constraints = toGroupConstraints(group);
   const members = toMemberPreferences(group.members);

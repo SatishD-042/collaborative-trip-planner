@@ -1,27 +1,34 @@
 import { Destination, MemberPreferences } from "./types";
 
+function scoreBudgetFit(baseCost: number, preferredSpend: number, maxBudget: number): number {
+    if (baseCost <= preferredSpend) return 10;
+    if (maxBudget <= preferredSpend) return 10;
+    const ratio = (baseCost - preferredSpend) / (maxBudget - preferredSpend);
+    return Math.max(0, 10 * (1 - ratio));
+}
+
 export function scoreDestinationForMember(
     destination: Destination,
-    member: MemberPreferences
+    member: MemberPreferences,
+    maxBudget: number
 ): number {
-    if (destination.tags.length === 0) return 0;
+    const tagWeights = destination.tags.map((tag) => member.preferences[tag] ?? 0);
+    const budgetFit = scoreBudgetFit(destination.baseCost, member.preferredSpend, maxBudget);
 
-    const totalScore = destination.tags.reduce((sum, tag) => {
-        const weight = member.preferences[tag] ?? 0;
-        return sum + weight;
-    }, 0);
+    const allScores = [...tagWeights, budgetFit];
+    return allScores.reduce((sum, s) => sum + s, 0) / allScores.length;
 
-    return totalScore / destination.tags.length;
 }
 
 export function scoreDestinationForGroup(
     destination: Destination,
-    members: MemberPreferences[]
+    members: MemberPreferences[],
+    maxBudget: number
 ): { score: number; memberScores: Record<string, number> } {
     const memberScores: Record<string, number> = {};
 
     for (const member of members) {
-        memberScores[member.userId] = scoreDestinationForMember(destination, member);
+        memberScores[member.userId] = scoreDestinationForMember(destination, member, maxBudget);
     }
 
     const scores = Object.values(memberScores);

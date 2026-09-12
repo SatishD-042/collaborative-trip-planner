@@ -17,6 +17,7 @@ export interface GroupConstraints {
 export interface MemberPreferences {
     userId: string;
     preferences: Record<string, number>;
+    preferredSpend: number;
 }
 
 export interface ScoredDestination extends Destination {

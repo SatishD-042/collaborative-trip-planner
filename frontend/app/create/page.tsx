@@ -44,14 +44,11 @@ export default function CreatePage() {
       const joinRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/groups/${groupId}/join`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: form.creatorName, email: form.creatorEmail }),
+        body: JSON.stringify({ name: form.creatorName, email: form.creatorEmail, isOwner: true }),
       });
       if (!joinRes.ok) throw new Error("Failed to join group");
-      const { userId, preferences } = await joinRes.json();
 
-      localStorage.setItem("userId", userId);
-      localStorage.setItem("name", form.creatorName);
-      localStorage.setItem("preferences", JSON.stringify(preferences));
+      localStorage.setItem("identity", JSON.stringify({ name: form.creatorName, email: form.creatorEmail }));
       router.push(`/groups/${groupId}`);
     } catch (err) {
       console.error(err);
