@@ -1,24 +1,25 @@
 {
-  "name": "trip-planner-backend",
+  "name": "collaborative-trip-planner",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
     "test": "vitest run",
-    "dev": "tsx watch src/server.ts"
+    "dev": "tsx watch src/server.ts",
+    "start": "tsx src/server.ts"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/SatishD-042/trip-planner-backend.git"
+    "url": "git+https://github.com/SatishD-042/collaborative-trip-planner.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "bugs": {
-    "url": "https://github.com/SatishD-042/trip-planner-backend/issues"
+    "url": "https://github.com/SatishD-042/collaborative-trip-planner/issues"
   },
-  "homepage": "https://github.com/SatishD-042/trip-planner-backend#readme",
+  "homepage": "https://github.com/SatishD-042/collaborative-trip-planner#readme",
   "devDependencies": {
     "@faker-js/faker": "^10.6.0",
     "@types/cors": "^2.8.19",
