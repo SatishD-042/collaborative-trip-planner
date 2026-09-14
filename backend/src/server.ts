@@ -22,6 +22,10 @@ const MIN_TRAVEL_HOURS = 1;
 const MAX_TRAVEL_HOURS = 100;
 const ALLOWED_CURRENCIES = ["USD", "EUR", "GBP", "INR", "JPY", "AUD", "CAD"];
 
+app.get("/", (req, res) => {
+  res.json({ status: "ok", message: "Collaborative Trip Planner API is running" });
+});
+
 app.post("/groups", async (req, res) => {
   try {
     const { name, startDate, endDate, maxBudget, maxTravelHours, currency, origin } = req.body;
