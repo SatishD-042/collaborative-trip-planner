@@ -11,11 +11,11 @@ A real-time, full-stack group trip planning app. Set a budget, share preferences
 
 ## Try it yourself
 
-You can create your own group from the homepage, or explore a live demo group without signing up anything real:
+You can create your own group from the homepage, or explore this live demo group without signing up anything real:
 
 1. Visit [FRONTEND-URL](https://collaborative-trip-planner-beta.vercel.app/)
 2. Click **Join Group**
-3. Group ID: `[021ceec7-0b04-44a1-ba31-62b7cc81b504]`
+3. Demo Group ID: `[021ceec7-0b04-44a1-ba31-62b7cc81b504]`
 4. Name: `[demo]` · Email: `[demo@gmail.com]`
 
 This is a real, shared, live group in the production database — not a sandboxed copy. Feel free to drag sliders, add destinations, or add suggestions; you're welcome to explore, but keep in mind other visitors may be interacting with the same group at the same time, since everything updates in real time for everyone using it.
@@ -23,23 +23,35 @@ This is a real, shared, live group in the production database — not a sandboxe
 ---
 
 ## Screenshots
-
-| Homepage | Group Dashboard |
-|---|---|
-| ![Homepage](docs/screenshots/home.png) | ![Dashboard](docs/screenshots/dashboard.png) |
-
-| Ranked Shortlist | Profile / Owner Panel |
-|---|---|
-| ![Shortlist](docs/screenshots/shortlist.png) | ![Profile panel](docs/screenshots/profile-panel.png) |
-
-*(Save your screenshots into a `docs/screenshots/` folder at the repo root, using these filenames — or rename yours to match, or edit the paths above to match your actual filenames.)*
-
----
+1. Homepage:
+<p align="center">
+<img src="docs/screenshots/home.png"
+  alt="Homepage screenshot of Collaborative Trip Planner App"
+  width="600" height="300">
+</p>
+2. Group Dashboard:
+<p align="center">
+<img src="docs/screenshots/dashboard.png"
+  alt="Dashboard screenshot of Collaborative Trip Planner App"
+  width="600" height="300">
+</p>
+3. Ranked Shortlist:
+<p align="center">
+<img src="docs/screenshots/shortlist.png"
+  alt="Screenshot of Shortlist section on Dashboard of Collaborative Trip Planner App"
+  width="600" height="300">
+</p>
+4. Profile / Owner Panel:
+<p align="center">
+<img src="docs/screenshots/profile-panel.png"
+  alt="Screenshot of Profile Panel on Dashboard of Collaborative Trip Planner App"
+  width="300" height="344">
+</p>
 
 ## Features
 
-- **Live, multi-user sync** — every group member's preference changes update everyone's view instantly via WebSockets, no refresh needed
-- **Custom decision engine** — filters destinations by hard budget/travel-time constraints, then scores the rest against each member's individual tag preferences and personal budget comfort, averaging into a group ranking
-- **Real weather data** — live forecasts per destination, cached to avoid redundant API calls
-- **Destination shortlisting** — browse suggestions from a shared pool or add any real-world place (geocoded automatically), with custom tags
-- **Group ownership controls** — the creator can adjust the group's budget, travel-time limit, and
+- **Live, multi-user sync** — every group member's preference changes update everyone's view instantly via WebSockets, no refresh needed.
+- **Custom decision engine** — filters destinations by hard budget/travel-time constraints, then scores the rest against each member's individual tag preferences and personal budget comfort, averaging into a group ranking.
+- **Real weather data** — also shows live forecasts of each destinations, cached in Redis to avoid redundant API calls.
+- **Destination shortlisting** — browse suggestions from a shared pool or add any of your favourite destination (geocoded automatically).
+- **Group ownership controls** — the creator of group can adjust the group's budget, travel-time limit.
